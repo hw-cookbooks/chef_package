@@ -39,5 +39,9 @@ Just like the existing ChefGem resource, the run_action is called directly again
 the resource, not via the runner. This means that chef_package based resources
 will not provide notifications.
 
+### Note about compatiblity
+
+This cookbook is currently _only_ compatible with Chef >= 10.14.0
+
 ## Infos
 * Repository: https://github.com/hw-cookbooks/chef_package

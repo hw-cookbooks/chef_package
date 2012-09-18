@@ -1,3 +1,7 @@
+if(Chef::Version.new(Chef::VERSION) < Chef::Version.new('10.14.0'))
+  raise 'Unsupported version of Chef encountered. Must be >= 10.14.0'
+end
+
 unless(defined?(ChefPackageHelper))
   class ChefPackageHelper
     class << self
