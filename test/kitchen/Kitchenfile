@@ -1,0 +1,4 @@
+cookbook "chef_package" do
+  lint :ignore => %w(FC001)
+  runtimes []
+end
