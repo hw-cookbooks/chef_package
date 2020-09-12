@@ -1,15 +1,14 @@
-if(Chef::Version.new(Chef::VERSION) < Chef::Version.new('10.14.0'))
+if Chef::Version.new(Chef::VERSION) < Chef::Version.new('10.14.0')
   raise 'Unsupported version of Chef encountered. Must be >= 10.14.0'
 end
 
-unless(defined?(ChefPackageHelper))
+unless defined?(ChefPackageHelper)
   class ChefPackageHelper
     class << self
-
       def plat_walker(hash)
-        hash.each_pair do |k,v|
-          if(v.is_a?(Hash))
-            if(v[:package])
+        hash.each_pair do |_k, v|
+          if v.is_a?(Hash)
+            if v[:package]
               v[:chef_package] = v[:package]
             else
               plat_walker(v)
@@ -20,14 +19,14 @@ unless(defined?(ChefPackageHelper))
 
       def descendents(klass, *args)
         k = klass.to_s.split('::')
-        parent = k.slice(0, k.size - 1).inject(Object){|m,o|
+        parent = k.slice(0, k.size - 1).inject(Object) do |m, o|
           m.const_get(o)
-        }
-        d = parent.constants.map{ |const|
+        end
+        d = parent.constants.map do |const|
           parent.const_get(const)
-        }.find_all{|k|
+        end.find_all do |k|
           k < klass if k.is_a?(Class)
-        }
+        end
         d.unshift(klass) if args.include?(:with_self)
         d
       end
@@ -37,18 +36,17 @@ unless(defined?(ChefPackageHelper))
   module ChefPackageResourcer
     module Notifier
       def chef_run_action(*args)
-        if(args.first.respond_to?(:chef_based_resource?) && args.first.chef_based_resource?)
-          if(args.first.updated_by_last_action?)
+        if args.first.respond_to?(:chef_based_resource?) && args.first.chef_based_resource?
+          if args.first.updated_by_last_action?
             run_context.immediate_notifications(args.first).each do |notification|
               Chef::Log.info "#{args.first} sending #{notification.action} to #{notification.resource} (immediate)"
               run_action(notification.resource, notification.action, :immediate, args.first)
             end
             run_context.delayed_notifications(args.first).each do |notification|
-              if(delayed_action.any?{|ex_not| ex_not.duplicates?(notification)})
-                Chef::Log.info "#{args.first} not queuing delayed action " << 
-                  "#{notification.action} on #{notification.resource} " <<
-                  "(delayed), as it's already been queued"
-              end
+              next unless delayed_action.any? { |ex_not| ex_not.duplicates?(notification) }
+              Chef::Log.info "#{args.first} not queuing delayed action " <<
+                             "#{notification.action} on #{notification.resource} " <<
+                             "(delayed), as it's already been queued"
             end
           end
           args.first.chef_based_resource = nil
@@ -95,7 +93,7 @@ unless(defined?(ChefPackageHelper))
       class << self
         def included(base)
           base.class_eval do
-            unless(instance_methods.include?(:original_updated_by_last_action?))
+            unless instance_methods.include?(:original_updated_by_last_action?)
               alias_method :original_updated_by_last_action?, :updated_by_last_action?
               alias_method :updated_by_last_action?, :chef_updated_by_last_action?
               alias_method :original_load_prior_resource, :load_prior_resource
@@ -107,7 +105,6 @@ unless(defined?(ChefPackageHelper))
     end
 
     module AfterCreated
-
       def chef_initialize(*args)
         original_initialize(*args)
         @original_resource = base_resource.new(@name, @run_context)
@@ -115,7 +112,7 @@ unless(defined?(ChefPackageHelper))
         @run_context.resource_collection.insert(@original_resource)
         @resource_name = Chef::Mixin::ConvertToClassName.snake_case_basename(self.class.name).to_sym
       end
-      
+
       def base_resource
         parts = self.class.name.split('::')
         Chef::Resource.const_get(parts.last.sub(/^Chef/, ''))
@@ -132,8 +129,8 @@ unless(defined?(ChefPackageHelper))
         def included(base)
           camel_name = Chef::Mixin::ConvertToClassName.snake_case_basename(base.name).to_sym
           base.class_eval do
-            unless(instance_methods.include?(:original_initialize))
-              provides camel_name, :on_platforms => :all
+            unless instance_methods.include?(:original_initialize)
+              provides camel_name, on_platforms: :all
               alias_method :original_after_created, :after_created
               alias_method :after_created, :chef_after_created
               alias_method :original_initialize, :initialize
@@ -143,7 +140,6 @@ unless(defined?(ChefPackageHelper))
         end
       end
     end
-
   end
   klasses = []
 
@@ -160,6 +156,6 @@ unless(defined?(ChefPackageHelper))
   Chef::Log.info "Added new internal chef package resources: #{klasses.sort.join(', ')}"
 
   ChefPackageHelper.plat_walker(Chef::Platform.platforms)
-  Chef::Runner.send(:include, ChefPackageResourcer::Notifier) 
+  Chef::Runner.include ChefPackageResourcer::Notifier
 
 end
