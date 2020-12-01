@@ -65,6 +65,7 @@ unless defined?(ChefPackageHelper)
         end
       end
     end
+
     module Updater
       def chef_based_resource?
         !!@chef_based_resource
