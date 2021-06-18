@@ -1,7 +1,6 @@
 require 'minitest/spec'
 
 describe_recipe 'chef_package_test::default' do
-
   include MiniTest::Chef::Assertions
   include MiniTest::Chef::Context
   include MiniTest::Chef::Resources
